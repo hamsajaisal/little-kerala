@@ -1,0 +1,2207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Little Kerala – Interactive 3D Miniature Town</title>
+  <style>
+    :root {
+      --bg-panel: #141f18;
+      --bg-card: #1d2d23;
+      --text-main: #f4f7f4;
+      --text-muted: #c2d1c6;
+      --accent: #f5b041;
+      --accent-hover: #f8c471;
+      --accent-text: #111914;
+      --focus-ring: #58d68d;
+      --border-col: #344e3e;
+      --danger: #e74c3c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #0f1712;
+      color: var(--text-main);
+      overflow: hidden;
+    }
+
+    .skip-link {
+      position: absolute;
+      top: -999px;
+      left: 12px;
+      background: var(--accent);
+      color: var(--accent-text);
+      padding: 10px 16px;
+      font-weight: 700;
+      border-radius: 6px;
+      z-index: 9999;
+      text-decoration: none;
+    }
+
+    .skip-link:focus {
+      top: 12px;
+      outline: 3px solid var(--focus-ring);
+    }
+
+    .app-layout {
+      display: flex;
+      flex-direction: row;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .control-panel {
+      width: 390px;
+      min-width: 330px;
+      max-width: 100%;
+      height: 100vh;
+      overflow-y: auto;
+      background-color: var(--bg-panel);
+      border-right: 2px solid var(--border-col);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 20;
+    }
+
+    .viewport-area {
+      flex: 1;
+      position: relative;
+      height: 100vh;
+      background-color: #87ceeb;
+      overflow: hidden;
+    }
+
+    #town-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    h1 {
+      font-size: 1.45rem;
+      margin: 0 0 6px 0;
+      color: var(--accent);
+      letter-spacing: 0.3px;
+    }
+
+    h2 {
+      font-size: 1.05rem;
+      margin: 0 0 10px 0;
+      color: #ffffff;
+      border-bottom: 1px solid var(--border-col);
+      padding-bottom: 6px;
+    }
+
+    p {
+      margin: 0 0 10px 0;
+      line-height: 1.5;
+      font-size: 0.94rem;
+      color: var(--text-muted);
+    }
+
+    .section-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-col);
+      border-radius: 8px;
+      padding: 14px;
+    }
+
+    .control-group {
+      margin-bottom: 12px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 0.92rem;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    select,
+    button {
+      width: 100%;
+      min-height: 44px;
+      padding: 9px 12px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 2px solid var(--border-col);
+      background-color: #263b2e;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    select:hover,
+    button:hover {
+      background-color: #314b3b;
+      border-color: #527a61;
+    }
+
+    select:focus-visible,
+    button:focus-visible {
+      outline: 3px solid var(--focus-ring);
+      outline-offset: 2px;
+      border-color: var(--focus-ring);
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: var(--accent-text);
+      border-color: var(--accent);
+      font-weight: 700;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+      border-color: var(--accent-hover);
+    }
+
+    .btn-stop {
+      background-color: var(--danger);
+      color: #ffffff;
+      border-color: #ff6b5b;
+      font-weight: 700;
+    }
+
+    .btn-stop:hover {
+      background-color: #c0392b;
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .status-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 0.9rem;
+    }
+
+    .status-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px dashed var(--border-col);
+    }
+
+    .status-list li:last-child {
+      border-bottom: none;
+    }
+
+    .status-label {
+      color: var(--text-muted);
+    }
+
+    .status-value {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .live-announcement-box {
+      background-color: #101913;
+      border-left: 4px solid var(--accent);
+      padding: 10px 12px;
+      border-radius: 4px;
+      font-size: 0.92rem;
+      line-height: 1.45;
+      color: #ffffff;
+      margin-top: 8px;
+    }
+
+    .scene-description-output {
+      background-color: #101913;
+      border: 1px solid var(--border-col);
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: var(--text-main);
+      margin-top: 10px;
+    }
+
+    .overlay-message {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: rgba(15, 23, 18, 0.92);
+      z-index: 50;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .overlay-box {
+      max-width: 480px;
+      background-color: var(--bg-card);
+      border: 2px solid var(--border-col);
+      border-radius: 10px;
+      padding: 24px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 820px) {
+      html, body {
+        overflow: auto;
+      }
+      .app-layout {
+        flex-direction: column;
+        height: auto;
+      }
+      .viewport-area {
+        height: 55vh;
+        min-height: 320px;
+        order: 1;
+      }
+      .control-panel {
+        width: 100%;
+        height: auto;
+        order: 2;
+        border-right: none;
+        border-top: 2px solid var(--border-col);
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#QuickShowcaseBtn" class="skip-link">Skip to Scene Controls</a>
+
+  <div class="app-layout">
+    <!-- ACCESSIBLE HTML PRESENTER CONTROL PANEL -->
+    <main class="control-panel" id="PresenterPanel" aria-label="Little Kerala Presenter Controls and Status">
+      <header>
+        <h1>Little Kerala</h1>
+        <p id="TownIntro">
+          An interactive 3D miniature diorama of a fictional Kerala neighbourhood. Features 12 tiled-roof houses and shops (including Nair's Chaya Kada tea shop), a village pond, swaying coconut palms, a bus shelter with waiting passengers, and left-hand traffic led by a red-and-cream KSRTC-style bus.
+        </p>
+      </header>
+
+      <!-- SHOWCASE TOUR SECTION -->
+      <section class="section-card" aria-labelledby="HeadingShowcase">
+        <h2 id="HeadingShowcase">Guided Showcase Tour</h2>
+        <p>Runs an automated 45-second presentation cycling through overview, bus tracking, night illumination, and tropical monsoon rain.</p>
+        <button type="button" id="QuickShowcaseBtn" class="btn-primary">
+          Start Showcase (45s Tour)
+        </button>
+      </section>
+
+      <!-- SCENE CONTROLS SECTION -->
+      <section class="section-card" aria-labelledby="HeadingControls">
+        <h2 id="HeadingControls">Scene Controls</h2>
+
+        <div class="control-group">
+          <label for="CameraSelect">Camera Viewpoint</label>
+          <select id="CameraSelect">
+            <option value="overview">Town Overview (Orbit &amp; Zoom enabled)</option>
+            <option value="follow">Follow Kerala Bus (Behind &amp; Above)</option>
+            <option value="street">Bus Stop Street View (Fixed Level)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="TimeSelect">Time of Day</label>
+          <select id="TimeSelect">
+            <option value="day">Daylight (Warm Tropical Sun)</option>
+            <option value="night">Night (Streetlights &amp; Windows Lit)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="WeatherSelect">Weather Condition</label>
+          <select id="WeatherSelect">
+            <option value="clear">Clear Sky</option>
+            <option value="rain">Tropical Rain (Animated Rain &amp; Wet Road)</option>
+          </select>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" id="PauseResumeBtn" aria-pressed="false">
+            Pause Traffic
+          </button>
+          <button type="button" id="ResetSceneBtn">
+            Reset Scene
+          </button>
+        </div>
+      </section>
+
+      <!-- LIVE SCENE STATUS & DESCRIPTION -->
+      <section class="section-card" aria-labelledby="HeadingStatus">
+        <h2 id="HeadingStatus">Current Scene Status</h2>
+        <ul class="status-list" aria-label="Current Scene Parameters">
+          <li>
+            <span class="status-label">Camera:</span>
+            <span class="status-value" id="StatusCamera">Town Overview</span>
+          </li>
+          <li>
+            <span class="status-label">Time of Day:</span>
+            <span class="status-value" id="StatusTime">Daylight</span>
+          </li>
+          <li>
+            <span class="status-label">Weather:</span>
+            <span class="status-value" id="StatusWeather">Clear Sky</span>
+          </li>
+          <li>
+            <span class="status-label">Simulation:</span>
+            <span class="status-value" id="StatusRunState">Running</span>
+          </li>
+          <li>
+            <span class="status-label">Showcase Mode:</span>
+            <span class="status-value" id="StatusShowcase">Inactive</span>
+          </li>
+        </ul>
+
+        <!-- Polite ARIA Live Region for User Actions & Showcase Announcements -->
+        <div
+          id="LiveStatusRegion"
+          class="live-announcement-box"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          Ready. Town Overview active in warm daylight.
+        </div>
+
+        <div class="control-group" style="margin-top: 12px;">
+          <button type="button" id="DescribeSceneBtn">
+            Describe Current Scene
+          </button>
+          <div
+            id="DetailedSceneDescription"
+            class="scene-description-output"
+            tabindex="-1"
+            aria-live="polite"
+          >
+            Press "Describe Current Scene" at any time to check the bus's current location and activity in the town.
+          </div>
+        </div>
+      </section>
+
+      <!-- HOSTING & NETWORK INFO -->
+      <section class="section-card" aria-labelledby="HeadingInfo">
+        <h2 id="HeadingInfo">Standalone &amp; GitHub Pages Info</h2>
+        <p style="margin-bottom: 0;">
+          This standalone HTML file runs without any local build server or sign-in. It requires an active internet connection to load Three.js (r128) and OrbitControls from the public jsDelivr CDN.
+        </p>
+      </section>
+    </main>
+
+    <!-- 3D WEBGL VIEWPORT REGION -->
+    <section
+      class="viewport-area"
+      aria-label="3D Miniature Visual Viewport (Visual display for sighted audience; use Presenter Controls to operate)"
+    >
+      <div id="LoadingOverlay" class="overlay-message" role="alert">
+        <div class="overlay-box">
+          <h2 id="OverlayTitle">Loading Little Kerala 3D Town...</h2>
+          <p id="OverlayText">
+            Initialising procedural Kerala architecture, coconut palms, vehicles, and lighting. Please ensure you are connected to the internet so Three.js can load from the CDN.
+          </p>
+        </div>
+      </div>
+      <canvas id="town-canvas" tabindex="-1" aria-hidden="true"></canvas>
+    </section>
+  </div>
+
+  <!-- Pinned Three.js r128 and OrbitControls from public CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    (function () {
+      "use strict";
+
+      // ============================================================================
+      // 1. UI ELEMENT REFERENCES & ACCESSIBLE ANNOUNCER
+      // ============================================================================
+      var ui = {
+        showcaseBtn: document.getElementById("QuickShowcaseBtn"),
+        cameraSelect: document.getElementById("CameraSelect"),
+        timeSelect: document.getElementById("TimeSelect"),
+        weatherSelect: document.getElementById("WeatherSelect"),
+        pauseBtn: document.getElementById("PauseResumeBtn"),
+        resetBtn: document.getElementById("ResetSceneBtn"),
+        describeBtn: document.getElementById("DescribeSceneBtn"),
+        statusCamera: document.getElementById("StatusCamera"),
+        statusTime: document.getElementById("StatusTime"),
+        statusWeather: document.getElementById("StatusWeather"),
+        statusRunState: document.getElementById("StatusRunState"),
+        statusShowcase: document.getElementById("StatusShowcase"),
+        liveRegion: document.getElementById("LiveStatusRegion"),
+        detailedDesc: document.getElementById("DetailedSceneDescription"),
+        loadingOverlay: document.getElementById("LoadingOverlay"),
+        overlayTitle: document.getElementById("OverlayTitle"),
+        overlayText: document.getElementById("OverlayText"),
+        canvas: document.getElementById("town-canvas")
+      };
+
+      function showError(title, message) {
+        ui.loadingOverlay.classList.remove("hidden");
+        ui.overlayTitle.textContent = title;
+        ui.overlayText.textContent = message;
+        ui.liveRegion.textContent = title + ": " + message;
+      }
+
+      if (typeof window.THREE === "undefined" || typeof window.THREE.OrbitControls === "undefined") {
+        showError(
+          "Three.js Library Could Not Load",
+          "Please verify that your computer is connected to the internet so Three.js (r128) and OrbitControls can load from cdn.jsdelivr.net, then refresh the page."
+        );
+        return;
+      }
+
+      // Application State
+      var appState = {
+        cameraMode: "overview", // 'overview' | 'follow' | 'street'
+        timeOfDay: "day",       // 'day' | 'night'
+        weather: "clear",       // 'clear' | 'rain'
+        isPaused: false,
+        showcaseActive: false,
+        showcaseElapsed: 0,
+        showcaseStepIndex: -1,
+        busProgress: 0.86,      // Starts approaching the South Bus Stop (at s = 0.0)
+        busStopTimer: 0,
+        busSpeedMultiplier: 1.0,
+        busStateText: "cruising",
+        otherVehicles: [
+          { name: "Yellow-and-black Auto-Rickshaw", progress: 0.12, baseSpeed: 0.041, laneOffset: 1.85, mesh: null, lights: [] },
+          { name: "White Ambassador Car", progress: 0.45, baseSpeed: 0.041, laneOffset: 1.85, mesh: null, lights: [] },
+          { name: "Blue Delivery Pickup Van", progress: 0.78, baseSpeed: 0.041, laneOffset: 1.85, mesh: null, lights: [] }
+        ]
+      };
+
+      function announceStatus(message) {
+        ui.liveRegion.textContent = "";
+        window.setTimeout(function () {
+          ui.liveRegion.textContent = message;
+        }, 30);
+      }
+
+      function updateStatusPanel() {
+        var camNames = {
+          overview: "Town Overview",
+          follow: "Follow Kerala Bus",
+          street: "Bus Stop Street View"
+        };
+        var timeNames = {
+          day: "Daylight",
+          night: "Night"
+        };
+        var weatherNames = {
+          clear: "Clear Sky",
+          rain: "Tropical Rain"
+        };
+
+        ui.statusCamera.textContent = camNames[appState.cameraMode] || "Town Overview";
+        ui.statusTime.textContent = timeNames[appState.timeOfDay] || "Daylight";
+        ui.statusWeather.textContent = weatherNames[appState.weather] || "Clear Sky";
+        ui.statusRunState.textContent = appState.isPaused ? "Paused" : "Running";
+        ui.statusShowcase.textContent = appState.showcaseActive
+          ? "Active (" + Math.max(0, Math.ceil(45 - appState.showcaseElapsed)) + "s left)"
+          : "Inactive";
+
+        ui.cameraSelect.value = appState.cameraMode;
+        ui.timeSelect.value = appState.timeOfDay;
+        ui.weatherSelect.value = appState.weather;
+
+        ui.pauseBtn.textContent = appState.isPaused ? "Resume Traffic" : "Pause Traffic";
+        ui.pauseBtn.setAttribute("aria-pressed", appState.isPaused ? "true" : "false");
+
+        if (appState.showcaseActive) {
+          ui.showcaseBtn.textContent = "Stop Showcase";
+          ui.showcaseBtn.className = "btn-stop";
+        } else {
+          ui.showcaseBtn.textContent = "Start Showcase (45s Tour)";
+          ui.showcaseBtn.className = "btn-primary";
+        }
+      }
+
+      // ============================================================================
+      // 2. THREE.JS SCENE, RENDERER, CAMERAS & LIGHTS
+      // ============================================================================
+      var renderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas: ui.canvas,
+          antialias: true,
+          powerPreference: "high-performance"
+        });
+      } catch (err) {
+        showError(
+          "WebGL Not Available",
+          "Your browser or graphics hardware could not initialise a WebGL context. Please enable hardware acceleration or try a modern desktop browser."
+        );
+        return;
+      }
+
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(ui.canvas.clientWidth, ui.canvas.clientHeight, false);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+
+      var scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x8cd3ff);
+      scene.fog = new THREE.FogExp2(0x8cd3ff, 0.0042);
+
+      var camera = new THREE.PerspectiveCamera(
+        42,
+        ui.canvas.clientWidth / Math.max(1, ui.canvas.clientHeight),
+        0.5,
+        350
+      );
+      var OVERVIEW_POS = new THREE.Vector3(0, 56, 78);
+      var OVERVIEW_TARGET = new THREE.Vector3(0, 2, 0);
+      camera.position.copy(OVERVIEW_POS);
+
+      var controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.target.copy(OVERVIEW_TARGET);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.maxPolarAngle = Math.PI / 2 - 0.06;
+      controls.minDistance = 22;
+      controls.maxDistance = 135;
+      controls.update();
+
+      // Lighting Setup
+      var hemiLight = new THREE.HemisphereLight(0xfff6e5, 0x3f6a34, 0.72);
+      hemiLight.position.set(0, 60, 0);
+      scene.add(hemiLight);
+
+      var sunLight = new THREE.DirectionalLight(0xfff0d4, 1.15);
+      sunLight.position.set(42, 68, 36);
+      sunLight.castShadow = true;
+      sunLight.shadow.mapSize.width = 2048;
+      sunLight.shadow.mapSize.height = 2048;
+      sunLight.shadow.camera.near = 10;
+      sunLight.shadow.camera.far = 180;
+      var d = 55;
+      sunLight.shadow.camera.left = -d;
+      sunLight.shadow.camera.right = d;
+      sunLight.shadow.camera.top = d;
+      sunLight.shadow.camera.bottom = -d;
+      sunLight.shadow.bias = -0.0005;
+      scene.add(sunLight);
+
+      // Collections for Night/Rain transitions
+      var nightWindowMaterials = [];
+      var streetLightBulbs = [];
+      var streetPointLights = [];
+      var busLightMeshes = [];
+      var busHeadlightSpot = null;
+      var palmLeafGroups = [];
+
+      // ============================================================================
+      // 3. PROCEDURAL TEXTURE HELPERS (FOR SHOP SIGNS & ROAD MARKINGS)
+      // ============================================================================
+      function createSignTexture(titleText, subtitleText, bgColor, textColor, borderColor) {
+        var c = document.createElement("canvas");
+        c.width = 512;
+        c.height = 128;
+        var ctx = c.getContext("2d");
+
+        ctx.fillStyle = bgColor || "#7b1fa2";
+        ctx.fillRect(0, 0, c.width, c.height);
+
+        ctx.strokeStyle = borderColor || "#f5b041";
+        ctx.lineWidth = 10;
+        ctx.strokeRect(8, 8, c.width - 16, c.height - 16);
+
+        ctx.fillStyle = textColor || "#ffffff";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold 44px sans-serif";
+        ctx.fillText(titleText, c.width / 2, subtitleText ? 48 : 64);
+
+        if (subtitleText) {
+          ctx.fillStyle = borderColor || "#f8c471";
+          ctx.font = "bold 26px sans-serif";
+          ctx.fillText(subtitleText, c.width / 2, 92);
+        }
+
+        var tex = new THREE.CanvasTexture(c);
+        tex.encoding = THREE.sRGBEncoding;
+        return tex;
+      }
+
+      // ============================================================================
+      // 4. ROAD LOOP MATHEMATICS (SMOOTH ROUNDED RECTANGLE)
+      // ============================================================================
+      // Rounded rectangle road loop:
+      // Straight X half-span = 18, Straight Z half-span = 11, Corner Radius R = 10
+      // Outer boundary reaches X = +-28, Z = +-21.
+      // Bus travels Clockwise (Left-hand lane on outer side of loop)
+      var ROAD_HX = 18;
+      var ROAD_HZ = 11;
+      var ROAD_R = 10;
+      var L_TOP = ROAD_HX * 2;                     // 36
+      var L_BOT = ROAD_HX * 2;                     // 36
+      var L_LEFT = ROAD_HZ * 2;                    // 22
+      var L_RIGHT = ROAD_HZ * 2;                   // 22
+      var L_CORNER = 0.5 * Math.PI * ROAD_R;       // ~15.70796
+      var TOTAL_ROAD_LEN = L_TOP + L_BOT + L_LEFT + L_RIGHT + 4 * L_CORNER; // ~178.83
+
+      // Returns center-line position and tangent unit vector for normalized s in [0, 1)
+      // s = 0 is the exact center of the South Straight (x = 0, z = +21), heading West (-X)
+      function getRoadCenterPoint(sNorm) {
+        var s = ((sNorm % 1) + 1) % 1;
+        var dist = s * TOTAL_ROAD_LEN;
+
+        // Segment 1: South straight (second half, from x = 0 to x = -18 at z = +21)
+        var seg1 = ROAD_HX; // 18
+        if (dist < seg1) {
+          return {
+            x: -dist,
+            z: ROAD_HZ + ROAD_R,
+            tx: -1,
+            tz: 0
+          };
+        }
+        dist -= seg1;
+
+        // Segment 2: Bottom-Left Corner (center at -18, +11), angle from +PI/2 to PI
+        if (dist < L_CORNER) {
+          var ang2 = (Math.PI / 2) + (dist / ROAD_R);
+          return {
+            x: -ROAD_HX + ROAD_R * Math.cos(ang2),
+            z: ROAD_HZ + ROAD_R * Math.sin(ang2),
+            tx: -Math.sin(ang2),
+            tz: Math.cos(ang2)
+          };
+        }
+        dist -= L_CORNER;
+
+        // Segment 3: West straight (x = -28, z from +11 to -11)
+        if (dist < L_LEFT) {
+          return {
+            x: -(ROAD_HX + ROAD_R),
+            z: ROAD_HZ - dist,
+            tx: 0,
+            tz: -1
+          };
+        }
+        dist -= L_LEFT;
+
+        // Segment 4: Top-Left Corner (center at -18, -11), angle from PI to 3*PI/2
+        if (dist < L_CORNER) {
+          var ang4 = Math.PI + (dist / ROAD_R);
+          return {
+            x: -ROAD_HX + ROAD_R * Math.cos(ang4),
+            z: -ROAD_HZ + ROAD_R * Math.sin(ang4),
+            tx: -Math.sin(ang4),
+            tz: Math.cos(ang4)
+          };
+        }
+        dist -= L_CORNER;
+
+        // Segment 5: North straight (z = -21, x from -18 to +18)
+        if (dist < L_TOP) {
+          return {
+            x: -ROAD_HX + dist,
+            z: -(ROAD_HZ + ROAD_R),
+            tx: 1,
+            tz: 0
+          };
+        }
+        dist -= L_TOP;
+
+        // Segment 6: Top-Right Corner (center at +18, -11), angle from 3*PI/2 to 2*PI
+        if (dist < L_CORNER) {
+          var ang6 = (1.5 * Math.PI) + (dist / ROAD_R);
+          return {
+            x: ROAD_HX + ROAD_R * Math.cos(ang6),
+            z: -ROAD_HZ + ROAD_R * Math.sin(ang6),
+            tx: -Math.sin(ang6),
+            tz: Math.cos(ang6)
+          };
+        }
+        dist -= L_CORNER;
+
+        // Segment 7: East straight (x = +28, z from -11 to +11)
+        if (dist < L_RIGHT) {
+          return {
+            x: ROAD_HX + ROAD_R,
+            z: -ROAD_HZ + dist,
+            tx: 0,
+            tz: 1
+          };
+        }
+        dist -= L_RIGHT;
+
+        // Segment 8: Bottom-Right Corner (center at +18, +11), angle from 0 to PI/2
+        if (dist < L_CORNER) {
+          var ang8 = dist / ROAD_R;
+          return {
+            x: ROAD_HX + ROAD_R * Math.cos(ang8),
+            z: ROAD_HZ + ROAD_R * Math.sin(ang8),
+            tx: -Math.sin(ang8),
+            tz: Math.cos(ang8)
+          };
+        }
+        dist -= L_CORNER;
+
+        // Segment 9: South straight (first half, from x = +18 to x = 0 at z = +21)
+        return {
+          x: ROAD_HX - dist,
+          z: ROAD_HZ + ROAD_R,
+          tx: -1,
+          tz: 0
+        };
+      }
+
+      // Gets world point offset into left-hand or opposing lane
+      // For clockwise travel (tx, tz), outward normal (left-hand side of road) is (-tz, tx)
+      function getLanePose(sNorm, outwardOffset, reverseDirection) {
+        var pt = getRoadCenterPoint(sNorm);
+        var nx = -pt.tz;
+        var nz = pt.tx;
+        var dirSign = reverseDirection ? -1 : 1;
+        return {
+          x: pt.x + nx * outwardOffset,
+          z: pt.z + nz * outwardOffset,
+          tx: pt.tx * dirSign,
+          tz: pt.tz * dirSign
+        };
+      }
+
+      // Human-readable location description for NVDA "Describe Current Scene"
+      function getBusLocationDescription(sNorm) {
+        var s = ((sNorm % 1) + 1) % 1;
+        if (s < 0.05 || s > 0.94) {
+          return "at the Bus Stop Shelter and Nair's Chaya Kada Tea Shop on the South Main Road";
+        } else if (s >= 0.05 && s < 0.19) {
+          return "rounding the South-West corner past the Malabar Bakery";
+        } else if (s >= 0.19 && s < 0.34) {
+          return "heading North along the West Residential Avenue past the courtyard houses";
+        } else if (s >= 0.34 && s < 0.45) {
+          return "turning East around the North-West palm grove corner";
+        } else if (s >= 0.45 && s < 0.64) {
+          return "cruising East along the North Bazaar Street past Malabar Spices, Kerala Books, and Kasavu Textiles";
+        } else if (s >= 0.64 && s < 0.75) {
+          return "rounding the North-East corner near the Ayurveda Vaidyasala";
+        } else if (s >= 0.75 && s < 0.88) {
+          return "travelling South along the East Village Road beside the Grama Library";
+        } else {
+          return "approaching the South Bus Stop Shelter";
+        }
+      }
+
+      // ============================================================================
+      // 5. BUILD MINIATURE DISPLAY BASE, GROUND, POND & ROAD LOOP
+      // ============================================================================
+      var townRoot = new THREE.Group();
+      scene.add(townRoot);
+
+      // Wooden miniature display plinth
+      var plinthOuterMat = new THREE.MeshStandardMaterial({
+        color: 0x3e2415,
+        roughness: 0.65,
+        metalness: 0.1
+      });
+      var plinthBase = new THREE.Mesh(new THREE.BoxGeometry(92, 4.5, 76), plinthOuterMat);
+      plinthBase.position.set(0, -2.6, 0);
+      plinthBase.receiveShadow = true;
+      townRoot.add(plinthBase);
+
+      var plinthTrimMat = new THREE.MeshStandardMaterial({
+        color: 0x5c3620,
+        roughness: 0.55
+      });
+      var plinthTrim = new THREE.Mesh(new THREE.BoxGeometry(94, 1.0, 78), plinthTrimMat);
+      plinthTrim.position.set(0, -4.4, 0);
+      townRoot.add(plinthTrim);
+
+      // Brass Title Plaque on front of display base
+      var plaqueTex = createSignTexture("LITTLE KERALA", "MINIATURE HERITAGE DIORAMA", "#d4ac0d", "#1c1404", "#9a7d0a");
+      var plaqueMat = new THREE.MeshStandardMaterial({
+        map: plaqueTex,
+        roughness: 0.35,
+        metalness: 0.6
+      });
+      var plaqueMesh = new THREE.Mesh(new THREE.BoxGeometry(18, 2.6, 0.4), plaqueMat);
+      plaqueMesh.position.set(0, -2.5, 38.1);
+      townRoot.add(plaqueMesh);
+
+      // Lush Tropical Grass Ground Top
+      var grassMat = new THREE.MeshStandardMaterial({
+        color: 0x568d46,
+        roughness: 0.92,
+        metalness: 0.0
+      });
+      var grassTop = new THREE.Mesh(new THREE.BoxGeometry(88, 0.8, 72), grassMat);
+      grassTop.position.set(0, -0.4, 0);
+      grassTop.receiveShadow = true;
+      townRoot.add(grassTop);
+
+      // Build Road Surface & Pavements using extruded 2D rounded-rectangle rings
+      function createRoundedRectShape(hx, hz, radius) {
+        var shape = new THREE.Shape();
+        var r = Math.max(0.1, radius);
+        shape.moveTo(-hx, -hz - r);
+        shape.lineTo(hx, -hz - r);
+        shape.absarc(hx, -hz, r, -Math.PI / 2, 0, false);
+        shape.lineTo(hx + r, hz);
+        shape.absarc(hx, hz, r, 0, Math.PI / 2, false);
+        shape.lineTo(-hx, hz + r);
+        shape.absarc(-hx, hz, r, Math.PI / 2, Math.PI, false);
+        shape.lineTo(-hx - r, -hz);
+        shape.absarc(-hx, -hz, r, Math.PI, 1.5 * Math.PI, false);
+        return shape;
+      }
+
+      function createRoadRingGeometry(hx, hz, innerR, outerR, height) {
+        var outerShape = createRoundedRectShape(hx, hz, outerR);
+        var innerHole = createRoundedRectShape(hx, hz, innerR);
+        outerShape.holes.push(innerHole);
+        var geo = new THREE.ExtrudeGeometry(outerShape, {
+          depth: height,
+          bevelEnabled: false,
+          curveSegments: 28
+        });
+        geo.rotateX(Math.PI / 2);
+        return geo;
+      }
+
+      // Outer & Inner Laterite/Concrete Pavements
+      var pavementMat = new THREE.MeshStandardMaterial({
+        color: 0xc2b29b,
+        roughness: 0.85
+      });
+      var outerSidewalkGeo = createRoadRingGeometry(ROAD_HX, ROAD_HZ, ROAD_R + 3.6, ROAD_R + 5.8, 0.18);
+      var outerSidewalk = new THREE.Mesh(outerSidewalkGeo, pavementMat);
+      outerSidewalk.position.y = 0.18;
+      outerSidewalk.receiveShadow = true;
+      townRoot.add(outerSidewalk);
+
+      var innerSidewalkGeo = createRoadRingGeometry(ROAD_HX, ROAD_HZ, ROAD_R - 5.4, ROAD_R - 3.6, 0.18);
+      var innerSidewalk = new THREE.Mesh(innerSidewalkGeo, pavementMat);
+      innerSidewalk.position.y = 0.18;
+      innerSidewalk.receiveShadow = true;
+      townRoot.add(innerSidewalk);
+
+      // Asphalt Road Surface (Material changes roughness in Rain mode)
+      var roadMat = new THREE.MeshStandardMaterial({
+        color: 0x33373d,
+        roughness: 0.85,
+        metalness: 0.08
+      });
+      var roadGeo = createRoadRingGeometry(ROAD_HX, ROAD_HZ, ROAD_R - 3.6, ROAD_R + 3.6, 0.08);
+      var roadMesh = new THREE.Mesh(roadGeo, roadMat);
+      roadMesh.position.y = 0.08;
+      roadMesh.receiveShadow = true;
+      townRoot.add(roadMesh);
+
+      // Dashed White Road Center Markings
+      var dashMat = new THREE.MeshStandardMaterial({ color: 0xf2f4f4, roughness: 0.6 });
+      var dashGeo = new THREE.BoxGeometry(1.5, 0.03, 0.22);
+      var numDashes = 56;
+      for (var i = 0; i < numDashes; i++) {
+        var sDash = i / numDashes;
+        var ptDash = getRoadCenterPoint(sDash);
+        var dashMesh = new THREE.Mesh(dashGeo, dashMat);
+        dashMesh.position.set(ptDash.x, 0.09, ptDash.z);
+        dashMesh.rotation.y = Math.atan2(-ptDash.tz, ptDash.tx);
+        townRoot.add(dashMesh);
+      }
+
+      // Zebra Crossings near Bus Stop (x = -7, z = 21) and North Bazaar (x = 0, z = -21)
+      function addZebraCrossing(xPos, zPos) {
+        var stripeGeo = new THREE.BoxGeometry(2.2, 0.035, 0.42);
+        for (var k = -5; k <= 5; k++) {
+          var stripe = new THREE.Mesh(stripeGeo, dashMat);
+          stripe.position.set(xPos, 0.095, zPos + k * 0.62);
+          townRoot.add(stripe);
+        }
+      }
+      addZebraCrossing(-7.5, 21);
+      addZebraCrossing(0, -21);
+
+      // Traditional Kerala Village Pond (Kulam) in the Central Green
+      function buildVillagePond(cx, cz) {
+        var pondGroup = new THREE.Group();
+        pondGroup.position.set(cx, 0, cz);
+
+        // Laterite stone embankment wall
+        var wallMat = new THREE.MeshStandardMaterial({ color: 0xa0522d, roughness: 0.88 });
+        var outerFrame = new THREE.Mesh(new THREE.BoxGeometry(12.5, 0.55, 9.5), wallMat);
+        outerFrame.position.y = 0.25;
+        outerFrame.receiveShadow = true;
+        pondGroup.add(outerFrame);
+
+        // Stepped ghats
+        var stepMat = new THREE.MeshStandardMaterial({ color: 0xb8734b, roughness: 0.82 });
+        var step1 = new THREE.Mesh(new THREE.BoxGeometry(11.3, 0.42, 8.3), stepMat);
+        step1.position.y = 0.34;
+        pondGroup.add(step1);
+
+        // Emerald water surface
+        var waterMat = new THREE.MeshStandardMaterial({
+          color: 0x1b7a6e,
+          roughness: 0.2,
+          metalness: 0.35
+        });
+        var waterMesh = new THREE.Mesh(new THREE.BoxGeometry(10.2, 0.48, 7.2), waterMat);
+        waterMesh.position.y = 0.38;
+        pondGroup.add(waterMesh);
+
+        // Floating lotus pads
+        var padMat = new THREE.MeshStandardMaterial({ color: 0x3b8c3b, roughness: 0.7 });
+        var padCoords = [[-2.5, -1.2], [-1.8, -0.5], [2.2, 1.4], [1.4, 0.9], [0.2, -1.8]];
+        for (var p = 0; p < padCoords.length; p++) {
+          var pad = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 12), padMat);
+          pad.position.set(padCoords[p][0], 0.63, padCoords[p][1]);
+          pondGroup.add(pad);
+        }
+
+        townRoot.add(pondGroup);
+      }
+      buildVillagePond(-7.5, 0);
+
+      // ============================================================================
+      // 6. KERALA ARCHITECTURE BUILDER (12 VARIED BUILDINGS)
+      // ============================================================================
+      var terracottaMat = new THREE.MeshStandardMaterial({
+        color: 0xb8472a,
+        roughness: 0.75
+      });
+      var darkTimberMat = new THREE.MeshStandardMaterial({
+        color: 0x422614,
+        roughness: 0.7
+      });
+      var gableTrimMat = new THREE.MeshStandardMaterial({
+        color: 0xf4efe6,
+        roughness: 0.6
+      });
+
+      function createPitchedRoof(width, depth, roofHeight) {
+        var roofGroup = new THREE.Group();
+        var halfW = width * 0.5 + 0.55;
+        var halfD = depth * 0.5 + 0.55;
+        var slopeLen = Math.sqrt(halfD * halfD + roofHeight * roofHeight);
+        var slopeAngle = Math.atan2(roofHeight, halfD);
+
+        var panelGeo = new THREE.BoxGeometry(halfW * 2, 0.18, slopeLen + 0.2);
+
+        var frontSlope = new THREE.Mesh(panelGeo, terracottaMat);
+        frontSlope.position.set(0, roofHeight * 0.5, halfD * 0.5);
+        frontSlope.rotation.x = slopeAngle;
+        frontSlope.castShadow = true;
+        frontSlope.receiveShadow = true;
+        roofGroup.add(frontSlope);
+
+        var backSlope = new THREE.Mesh(panelGeo, terracottaMat);
+        backSlope.position.set(0, roofHeight * 0.5, -halfD * 0.5);
+        backSlope.rotation.x = -slopeAngle;
+        backSlope.castShadow = true;
+        backSlope.receiveShadow = true;
+        roofGroup.add(backSlope);
+
+        // Triangular Gable Ends (Classic Kerala Mukhappu style)
+        var gableShape = new THREE.Shape();
+        gableShape.moveTo(0, roofHeight);
+        gableShape.lineTo(-halfD, 0);
+        gableShape.lineTo(halfD, 0);
+        gableShape.closePath();
+
+        var gableGeo = new THREE.ExtrudeGeometry(gableShape, {
+          depth: width,
+          bevelEnabled: false
+        });
+        gableGeo.rotateY(Math.PI / 2);
+        gableGeo.translate(-width * 0.5, 0, 0);
+
+        var gableMesh = new THREE.Mesh(gableGeo, gableTrimMat);
+        gableMesh.castShadow = true;
+        roofGroup.add(gableMesh);
+
+        // Ridge beam
+        var ridge = new THREE.Mesh(new THREE.BoxGeometry(halfW * 2 + 0.2, 0.24, 0.28), darkTimberMat);
+        ridge.position.set(0, roofHeight + 0.05, 0);
+        roofGroup.add(ridge);
+
+        return roofGroup;
+      }
+
+      function createKeralaBuilding(opts) {
+        var bGroup = new THREE.Group();
+        bGroup.position.set(opts.x, 0, opts.z);
+        bGroup.rotation.y = opts.rotY || 0;
+
+        var w = opts.w || 6;
+        var d = opts.d || 5;
+        var h1 = opts.h1 || 3.4;
+        var h2 = opts.twoStory ? (opts.h2 || 2.9) : 0;
+        var totalWallH = h1 + h2;
+
+        // Laterite Plinth Foundation
+        var plinth = new THREE.Mesh(
+          new THREE.BoxGeometry(w + 0.6, 0.45, d + 0.6),
+          new THREE.MeshStandardMaterial({ color: 0x7e4a35, roughness: 0.88 })
+        );
+        plinth.position.y = 0.225;
+        plinth.receiveShadow = true;
+        bGroup.add(plinth);
+
+        // Main Walls
+        var wallMat = new THREE.MeshStandardMaterial({
+          color: opts.wallColor || 0xfdf5e6,
+          roughness: 0.82
+        });
+        var bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(w, totalWallH, d), wallMat);
+        bodyMesh.position.y = 0.45 + totalWallH * 0.5;
+        bodyMesh.castShadow = true;
+        bodyMesh.receiveShadow = true;
+        bGroup.add(bodyMesh);
+
+        // Intermediate roof skirt and balcony for 2-story buildings
+        if (opts.twoStory) {
+          var skirt = new THREE.Mesh(new THREE.BoxGeometry(w + 0.8, 0.22, d + 0.8), terracottaMat);
+          skirt.position.y = 0.45 + h1;
+          skirt.castShadow = true;
+          bGroup.add(skirt);
+
+          if (opts.hasBalcony) {
+            var balFloor = new THREE.Mesh(new THREE.BoxGeometry(w * 0.72, 0.18, 1.35), darkTimberMat);
+            balFloor.position.set(0, 0.45 + h1, d * 0.5 + 0.65);
+            bGroup.add(balFloor);
+
+            var balRail = new THREE.Mesh(new THREE.BoxGeometry(w * 0.72, 0.85, 0.12), darkTimberMat);
+            balRail.position.set(0, 0.45 + h1 + 0.45, d * 0.5 + 1.22);
+            bGroup.add(balRail);
+          }
+        }
+
+        // Front Door
+        var door = new THREE.Mesh(new THREE.BoxGeometry(1.1, 2.1, 0.12), darkTimberMat);
+        door.position.set(0, 0.45 + 1.05, d * 0.5 + 0.03);
+        bGroup.add(door);
+
+        // Emissive Windows (Glow warm yellow at Night)
+        var winMat = new THREE.MeshStandardMaterial({
+          color: 0x2c3e50,
+          emissive: 0xffb84d,
+          emissiveIntensity: 0.0,
+          roughness: 0.3
+        });
+        nightWindowMaterials.push(winMat);
+
+        var winPositionsX = [-w * 0.3, w * 0.3];
+        for (var wx = 0; wx < winPositionsX.length; wx++) {
+          var win1 = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.1, 0.12), winMat);
+          win1.position.set(winPositionsX[wx], 0.45 + 1.6, d * 0.5 + 0.03);
+          bGroup.add(win1);
+
+          var winBack = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.1, 0.12), winMat);
+          winBack.position.set(winPositionsX[wx], 0.45 + 1.6, -d * 0.5 - 0.03);
+          bGroup.add(winBack);
+
+          if (opts.twoStory) {
+            var win2 = new THREE.Mesh(new THREE.BoxGeometry(1.05, 1.05, 0.12), winMat);
+            win2.position.set(winPositionsX[wx], 0.45 + h1 + 1.4, d * 0.5 + 0.03);
+            bGroup.add(win2);
+          }
+        }
+
+        // Shopfront Awning & Readable Signboard
+        if (opts.signTitle) {
+          var awningColor = opts.awningColor || 0x1e8449;
+          var awningMat = new THREE.MeshStandardMaterial({ color: awningColor, roughness: 0.65 });
+          var awning = new THREE.Mesh(new THREE.BoxGeometry(w * 0.92, 0.14, 1.65), awningMat);
+          awning.position.set(0, 0.45 + 2.55, d * 0.5 + 0.78);
+          awning.rotation.x = 0.28;
+          awning.castShadow = true;
+          bGroup.add(awning);
+
+          var signTex = createSignTexture(
+            opts.signTitle,
+            opts.signSub || "",
+            opts.signBg || "#1a5276",
+            "#ffffff",
+            "#f4d03f"
+          );
+          var signMat = new THREE.MeshStandardMaterial({
+            map: signTex,
+            roughness: 0.4,
+            emissive: 0x333333,
+            emissiveMap: signTex,
+            emissiveIntensity: 0.25
+          });
+          var signBoard = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 1.05, 0.16), signMat);
+          signBoard.position.set(0, 0.45 + 3.25, d * 0.5 + 0.22);
+          bGroup.add(signBoard);
+        }
+
+        // Sloped Terracotta Roof
+        var roof = createPitchedRoof(w, d, opts.roofH || 2.1);
+        roof.position.y = 0.45 + totalWallH;
+        bGroup.add(roof);
+
+        // Extra Tea Shop details (Samovar & Benches)
+        if (opts.isTeaShop) {
+          var bench1 = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.45, 0.55), darkTimberMat);
+          bench1.position.set(-1.6, 0.45 + 0.22, d * 0.5 + 1.1);
+          bGroup.add(bench1);
+
+          var counter = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.05, 0.8), darkTimberMat);
+          counter.position.set(1.6, 0.45 + 0.52, d * 0.5 + 0.75);
+          bGroup.add(counter);
+
+          var samovarMat = new THREE.MeshStandardMaterial({ color: 0xd4ac0d, metalness: 0.7, roughness: 0.25 });
+          var samovar = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.75, 12), samovarMat);
+          samovar.position.set(1.6, 0.45 + 1.4, d * 0.5 + 0.75);
+          bGroup.add(samovar);
+        }
+
+        townRoot.add(bGroup);
+      }
+
+      // Build 12 Varied Buildings around the Neighbourhood
+      // 1. Nair's Chaya Kada (Tea Shop) near South Bus Stop
+      createKeralaBuilding({
+        x: 9.5, z: 30.2, rotY: Math.PI,
+        w: 6.4, d: 4.8, h1: 3.5, twoStory: false, roofH: 2.0,
+        wallColor: 0xfdebd0,
+        signTitle: "NAIR'S CHAYA KADA", signSub: "HOT TEA & PAZHAM PORI",
+        signBg: "#8e241b", awningColor: 0xb03a2e, isTeaShop: true
+      });
+
+      // 2. Malabar Bakery (South-East)
+      createKeralaBuilding({
+        x: 20.5, z: 30.2, rotY: Math.PI,
+        w: 6.0, d: 5.0, h1: 3.4, twoStory: true, h2: 2.7, hasBalcony: true, roofH: 1.9,
+        wallColor: 0xfef9e7,
+        signTitle: "MALABAR BAKERY", signSub: "SWEETS & BANANA CHIPS",
+        signBg: "#6c3483", awningColor: 0x884ea0
+      });
+
+      // 3. South-West Heritage Villa
+      createKeralaBuilding({
+        x: -20.5, z: 30.2, rotY: Math.PI,
+        w: 6.8, d: 5.4, h1: 3.5, twoStory: true, h2: 2.8, hasBalcony: true, roofH: 2.2,
+        wallColor: 0xf5cba7
+      });
+
+      // 4. North Bazaar: Malabar Spices
+      createKeralaBuilding({
+        x: -15.5, z: -30.2, rotY: 0,
+        w: 6.2, d: 5.0, h1: 3.5, twoStory: false, roofH: 2.0,
+        wallColor: 0xfcf3cf,
+        signTitle: "MALABAR SPICES", signSub: "CARDAMOM & PEPPER",
+        signBg: "#196f3d", awningColor: 0x229954
+      });
+
+      // 5. North Bazaar: Kerala Books & Post
+      createKeralaBuilding({
+        x: -5.2, z: -30.2, rotY: 0,
+        w: 6.0, d: 4.8, h1: 3.4, twoStory: true, h2: 2.6, hasBalcony: true, roofH: 1.9,
+        wallColor: 0xebf5fb,
+        signTitle: "KERALA BOOKS", signSub: "NEWS & STATIONERY",
+        signBg: "#1b4f72", awningColor: 0x2874a6
+      });
+
+      // 6. North Bazaar: Kasavu Textiles
+      createKeralaBuilding({
+        x: 5.2, z: -30.2, rotY: 0,
+        w: 6.4, d: 5.0, h1: 3.5, twoStory: true, h2: 2.8, hasBalcony: true, roofH: 2.1,
+        wallColor: 0xfdf2e9,
+        signTitle: "KASAVU TEXTILES", signSub: "HANDLOOM SAREE & MUNDU",
+        signBg: "#78281f", awningColor: 0xa93226
+      });
+
+      // 7. North Bazaar: Coconut Oil & Provision Store
+      createKeralaBuilding({
+        x: 15.8, z: -30.2, rotY: 0,
+        w: 6.0, d: 4.8, h1: 3.4, twoStory: false, roofH: 1.9,
+        wallColor: 0xe8f8f5,
+        signTitle: "KERALA PROVISIONS", signSub: "RICE & COCONUT OIL",
+        signBg: "#117864", awningColor: 0x17a589
+      });
+
+      // 8. West Avenue: Nalukettu Style Courtyard House
+      createKeralaBuilding({
+        x: -37.2, z: -8.5, rotY: Math.PI / 2,
+        w: 7.2, d: 5.6, h1: 3.6, twoStory: true, h2: 2.8, hasBalcony: true, roofH: 2.2,
+        wallColor: 0xfae5d3
+      });
+
+      // 9. West Avenue: Green Garden Cottage
+      createKeralaBuilding({
+        x: -37.2, z: 8.5, rotY: Math.PI / 2,
+        w: 6.2, d: 5.0, h1: 3.4, twoStory: false, roofH: 2.0,
+        wallColor: 0xeafaf1
+      });
+
+      // 10. East Road: Ayurveda Vaidyasala
+      createKeralaBuilding({
+        x: 37.2, z: -8.5, rotY: -Math.PI / 2,
+        w: 6.6, d: 5.0, h1: 3.5, twoStory: false, roofH: 2.1,
+        wallColor: 0xe8f6f3,
+        signTitle: "VAIDYASALA", signSub: "KERALA AYURVEDA",
+        signBg: "#145a32", awningColor: 0x1e8449
+      });
+
+      // 11. East Road: Terracotta Villa
+      createKeralaBuilding({
+        x: 37.2, z: 8.5, rotY: -Math.PI / 2,
+        w: 6.4, d: 5.2, h1: 3.5, twoStory: true, h2: 2.7, hasBalcony: true, roofH: 2.0,
+        wallColor: 0xf9ebea
+      });
+
+      // 12. Inner Village Green: Grama Library & Reading Room
+      createKeralaBuilding({
+        x: 8.5, z: 0.0, rotY: 0,
+        w: 7.0, d: 5.2, h1: 3.5, twoStory: false, roofH: 2.1,
+        wallColor: 0xfef9e7,
+        signTitle: "GRAMA LIBRARY", signSub: "VILLAGE READING ROOM",
+        signBg: "#7d6608", awningColor: 0xb7950b
+      });
+
+      // ============================================================================
+      // 7. BUS STOP SHELTER & STYLISED WAITING PASSENGERS
+      // ============================================================================
+      function buildBusStopAndPeople() {
+        // Placed on South outer pavement at x = -2.0, z = 26.8 facing North (towards z = 21 road)
+        var stopGroup = new THREE.Group();
+        stopGroup.position.set(-2.0, 0.18, 26.8);
+        stopGroup.rotation.y = Math.PI; // Faces North (-Z)
+
+        var baseMat = new THREE.MeshStandardMaterial({ color: 0x95a5a6, roughness: 0.8 });
+        var basePad = new THREE.Mesh(new THREE.BoxGeometry(6.4, 0.2, 2.8), baseMat);
+        basePad.position.y = 0.1;
+        stopGroup.add(basePad);
+
+        var pillarMat = new THREE.MeshStandardMaterial({ color: 0x1f618d, roughness: 0.5 });
+        var pillarCoords = [[-2.8, -1.1], [2.8, -1.1], [-2.8, 1.1], [2.8, 1.1]];
+        for (var i = 0; i < pillarCoords.length; i++) {
+          var pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 2.7, 10), pillarMat);
+          pillar.position.set(pillarCoords[i][0], 1.45, pillarCoords[i][1]);
+          pillar.castShadow = true;
+          stopGroup.add(pillar);
+        }
+
+        // Back wall with Bus Stop sign
+        var backWall = new THREE.Mesh(
+          new THREE.BoxGeometry(5.6, 1.8, 0.14),
+          new THREE.MeshStandardMaterial({ color: 0xfdfefe, roughness: 0.7 })
+        );
+        backWall.position.set(0, 1.35, -1.1);
+        backWall.castShadow = true;
+        stopGroup.add(backWall);
+
+        var stopSignTex = createSignTexture("LITTLE KERALA BUS STOP", "KSRTC & TOWN SERVICES", "#b03a2e", "#ffffff", "#f4d03f");
+        var stopSign = new THREE.Mesh(
+          new THREE.BoxGeometry(4.4, 0.75, 0.16),
+          new THREE.MeshStandardMaterial({ map: stopSignTex, roughness: 0.4 })
+        );
+        stopSign.position.set(0, 2.35, 1.15);
+        stopGroup.add(stopSign);
+
+        // Sloped tiled shelter roof
+        var shelterRoof = createPitchedRoof(6.2, 2.6, 0.95);
+        shelterRoof.position.y = 2.75;
+        stopGroup.add(shelterRoof);
+
+        // Two wooden benches inside shelter
+        var benchGeo = new THREE.BoxGeometry(2.1, 0.42, 0.65);
+        var b1 = new THREE.Mesh(benchGeo, darkTimberMat);
+        b1.position.set(-1.4, 0.41, -0.4);
+        stopGroup.add(b1);
+
+        var b2 = new THREE.Mesh(benchGeo, darkTimberMat);
+        b2.position.set(1.4, 0.41, -0.4);
+        stopGroup.add(b2);
+
+        townRoot.add(stopGroup);
+
+        // Stylised People waiting near Bus Stop & Tea Shop
+        function addStylisedPerson(px, pz, shirtCol, lowerCol, rotY) {
+          var pGroup = new THREE.Group();
+          pGroup.position.set(px, 0.18, pz);
+          pGroup.rotation.y = rotY || 0;
+
+          // Lower garment (Mundu / Sari skirt)
+          var lower = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.22, 0.26, 0.72, 12),
+            new THREE.MeshStandardMaterial({ color: lowerCol, roughness: 0.75 })
+          );
+          lower.position.y = 0.36;
+          lower.castShadow = true;
+          pGroup.add(lower);
+
+          // Torso
+          var torso = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.23, 0.21, 0.62, 12),
+            new THREE.MeshStandardMaterial({ color: shirtCol, roughness: 0.7 })
+          );
+          torso.position.y = 1.0;
+          torso.castShadow = true;
+          pGroup.add(torso);
+
+          // Head
+          var head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.21, 12, 12),
+            new THREE.MeshStandardMaterial({ color: 0xc68642, roughness: 0.65 })
+          );
+          head.position.y = 1.5;
+          head.castShadow = true;
+          pGroup.add(head);
+
+          townRoot.add(pGroup);
+        }
+
+        // 4 passengers at bus shelter, 2 chatting at tea shop
+        addStylisedPerson(-3.6, 25.9, 0x2980b9, 0xf7f9f9, Math.PI);
+        addStylisedPerson(-1.8, 25.8, 0xe67e22, 0x8e44ad, Math.PI);
+        addStylisedPerson(0.1, 25.9, 0x27ae60, 0xfdfefe, Math.PI);
+        addStylisedPerson(1.6, 26.2, 0xc0392b, 0xf5cba7, Math.PI * 0.9);
+        addStylisedPerson(7.5, 26.8, 0xf39c12, 0xf7f9f9, 0.4);
+        addStylisedPerson(8.5, 26.8, 0x16a085, 0xf7f9f9, -0.5);
+      }
+      buildBusStopAndPeople();
+
+      // ============================================================================
+      // 8. COCONUT PALMS, GREENERY & STREETLIGHTS
+      // ============================================================================
+      var trunkMat = new THREE.MeshStandardMaterial({ color: 0x6e5036, roughness: 0.9 });
+      var frondMat = new THREE.MeshStandardMaterial({
+        color: 0x2e7d32,
+        roughness: 0.65,
+        side: THREE.DoubleSide
+      });
+      var coconutMat = new THREE.MeshStandardMaterial({ color: 0x4e342e, roughness: 0.8 });
+
+      function createCoconutPalm(x, z, scale, leanAngle) {
+        var palmGroup = new THREE.Group();
+        palmGroup.position.set(x, 0, z);
+        palmGroup.scale.setScalar(scale || 1.0);
+
+        // Segmented curved trunk
+        var segCount = 7;
+        var curX = 0;
+        var curY = 0;
+        var segH = 1.05;
+        for (var s = 0; s < segCount; s++) {
+          var rTop = 0.28 - s * 0.022;
+          var rBot = 0.31 - s * 0.022;
+          var seg = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, segH, 8), trunkMat);
+          var tilt = (leanAngle || 0.18) * (s / segCount);
+          seg.position.set(curX + Math.sin(tilt) * (segH * 0.5), curY + Math.cos(tilt) * (segH * 0.5), 0);
+          seg.rotation.z = -tilt;
+          seg.castShadow = true;
+          palmGroup.add(seg);
+          curX += Math.sin(tilt) * segH;
+          curY += Math.cos(tilt) * segH;
+        }
+
+        // Crown of fronds & coconuts
+        var crownGroup = new THREE.Group();
+        crownGroup.position.set(curX, curY, 0);
+
+        for (var c = 0; c < 3; c++) {
+          var nut = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), coconutMat);
+          var nutAng = (c * 2 * Math.PI) / 3;
+          nut.position.set(Math.cos(nutAng) * 0.22, -0.15, Math.sin(nutAng) * 0.22);
+          crownGroup.add(nut);
+        }
+
+        var numFronds = 7;
+        for (var f = 0; f < numFronds; f++) {
+          var frondPivot = new THREE.Group();
+          frondPivot.rotation.y = (f * 2 * Math.PI) / numFronds;
+
+          var leafGeo = new THREE.BoxGeometry(2.6, 0.06, 0.52);
+          var leaf = new THREE.Mesh(leafGeo, frondMat);
+          leaf.position.set(1.25, -0.18, 0);
+          leaf.rotation.z = -0.32;
+          leaf.castShadow = true;
+          frondPivot.add(leaf);
+
+          crownGroup.add(frondPivot);
+        }
+
+        palmGroup.add(crownGroup);
+        palmGroup.rotation.y = (x * 1.7 + z * 2.3) % (Math.PI * 2);
+        palmLeafGroups.push({ group: crownGroup, phase: (x + z) * 0.5 });
+        townRoot.add(palmGroup);
+      }
+
+      var palmCoords = [
+        [-30, 30, 1.05, 0.22], [-11, 31, 0.95, -0.18], [29, 30, 1.1, 0.2],
+        [-31, -30, 1.0, 0.16], [28, -30, 1.08, -0.22], [-39, -20, 0.95, 0.15],
+        [-39, 0, 1.05, 0.24], [-39, 20, 0.92, -0.18], [39, -20, 1.02, 0.19],
+        [39, 0, 1.1, -0.21], [39, 20, 0.96, 0.17],
+        // Inner village green palms around the pond & library
+        [-14, -5, 1.05, 0.2], [-14, 5, 0.92, -0.16], [-1, -6, 0.98, 0.15],
+        [-1, 6, 1.04, -0.2], [15, -5, 0.95, 0.18], [15, 5, 1.02, -0.15],
+        [-22, 19, 0.88, 0.14], [22, 19, 0.9, -0.14], [-22, -19, 0.9, 0.16],
+        [22, -19, 0.94, -0.18], [3.5, 29.5, 0.92, 0.15]
+      ];
+      for (var pIdx = 0; pIdx < palmCoords.length; pIdx++) {
+        var pc = palmCoords[pIdx];
+        createCoconutPalm(pc[0], pc[1], pc[2], pc[3]);
+      }
+
+      // Lush Tropical Shrubs
+      var bushMat = new THREE.MeshStandardMaterial({ color: 0x388e3c, roughness: 0.8 });
+      var bushCoords = [
+        [-12, 6], [-4, 6], [-12, -6], [4, -5], [14, 0], [-26, 26], [26, 26], [-26, -26], [26, -26]
+      ];
+      for (var bIdx = 0; bIdx < bushCoords.length; bIdx++) {
+        var bush = new THREE.Mesh(new THREE.DodecahedronGeometry(0.85, 1), bushMat);
+        bush.position.set(bushCoords[bIdx][0], 0.55, bushCoords[bIdx][1]);
+        bush.scale.set(1.2, 0.8, 1.2);
+        bush.castShadow = true;
+        townRoot.add(bush);
+      }
+
+      // Streetlights around the road loop
+      var poleMat = new THREE.MeshStandardMaterial({ color: 0x2c3e50, metalness: 0.5, roughness: 0.4 });
+      function createStreetLight(x, z, rotY) {
+        var slGroup = new THREE.Group();
+        slGroup.position.set(x, 0.18, z);
+        slGroup.rotation.y = rotY || 0;
+
+        var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 4.6, 8), poleMat);
+        pole.position.y = 2.3;
+        pole.castShadow = true;
+        slGroup.add(pole);
+
+        var arm = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.1), poleMat);
+        arm.position.set(0.5, 4.55, 0);
+        slGroup.add(arm);
+
+        var bulbMat = new THREE.MeshStandardMaterial({
+          color: 0xffffff,
+          emissive: 0xffd166,
+          emissiveIntensity: 0.0
+        });
+        streetLightBulbs.push(bulbMat);
+
+        var bulb = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.26), bulbMat);
+        bulb.position.set(0.95, 4.46, 0);
+        slGroup.add(bulb);
+
+        var ptLight = new THREE.PointLight(0xffb74d, 0.0, 18, 2);
+        ptLight.position.set(0.95, 4.2, 0);
+        slGroup.add(ptLight);
+        streetPointLights.push(ptLight);
+
+        townRoot.add(slGroup);
+      }
+
+      var streetLightPlacements = [
+        [-12, 16.5, -Math.PI / 2], [0, 16.5, -Math.PI / 2], [12, 16.5, -Math.PI / 2],
+        [-12, -16.5, Math.PI / 2], [0, -16.5, Math.PI / 2], [12, -16.5, Math.PI / 2],
+        [-23.5, 0, 0], [23.5, 0, Math.PI]
+      ];
+      for (var slIdx = 0; slIdx < streetLightPlacements.length; slIdx++) {
+        var sl = streetLightPlacements[slIdx];
+        createStreetLight(sl[0], sl[1], sl[2]);
+      }
+
+      // ============================================================================
+      // 9. VEHICLES: KERALA KSRTC-STYLE BUS + 3 LOCAL VEHICLES
+      // ============================================================================
+      var wheelMat = new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.8 });
+      var headlightMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        emissive: 0xfff3b0,
+        emissiveIntensity: 0.0
+      });
+      var taillightMat = new THREE.MeshStandardMaterial({
+        color: 0xc0392b,
+        emissive: 0xff3b30,
+        emissiveIntensity: 0.2
+      });
+      busLightMeshes.push(headlightMat, taillightMat);
+
+      function buildKeralaBus() {
+        var busGroup = new THREE.Group();
+
+        // Lower Red Chassis Body (Classic KSRTC Fast Passenger Livery)
+        var redBodyMat = new THREE.MeshStandardMaterial({ color: 0xc0392b, roughness: 0.45 });
+        var creamBodyMat = new THREE.MeshStandardMaterial({ color: 0xf9e79f, roughness: 0.5 });
+        var roofCapMat = new THREE.MeshStandardMaterial({ color: 0xd5dbdb, roughness: 0.6 });
+
+        var lowerHull = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.05, 2.05), redBodyMat);
+        lowerHull.position.y = 0.82;
+        lowerHull.castShadow = true;
+        busGroup.add(lowerHull);
+
+        var upperHull = new THREE.Mesh(new THREE.BoxGeometry(5.1, 1.0, 2.0), creamBodyMat);
+        upperHull.position.y = 1.82;
+        upperHull.castShadow = true;
+        busGroup.add(upperHull);
+
+        var roofCap = new THREE.Mesh(new THREE.BoxGeometry(4.9, 0.22, 1.9), roofCapMat);
+        roofCap.position.y = 2.42;
+        busGroup.add(roofCap);
+
+        // Destination Board on Front ("KOZHIKODE - PALAKKAD")
+        var destTex = createSignTexture("KERALA STATE", "FAST PASSENGER", "#1c2833", "#f4d03f", "#e74c3c");
+        var destBoard = new THREE.Mesh(
+          new THREE.BoxGeometry(0.08, 0.36, 1.4),
+          new THREE.MeshStandardMaterial({ map: destTex, emissive: 0x222222, emissiveMap: destTex })
+        );
+        destBoard.position.set(2.56, 2.15, 0);
+        busGroup.add(destBoard);
+
+        // Windows along sides & windshield
+        var busWinMat = new THREE.MeshStandardMaterial({
+          color: 0x283747,
+          emissive: 0xffd166,
+          emissiveIntensity: 0.0,
+          roughness: 0.25
+        });
+        nightWindowMaterials.push(busWinMat);
+
+        var windshield = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.78, 1.78), busWinMat);
+        windshield.position.set(2.53, 1.75, 0);
+        busGroup.add(windshield);
+
+        var sideWin = new THREE.Mesh(new THREE.BoxGeometry(4.2, 0.68, 2.04), busWinMat);
+        sideWin.position.set(-0.1, 1.8, 0);
+        busGroup.add(sideWin);
+
+        // 4 Wheels
+        var wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.28, 14);
+        wheelGeo.rotateX(Math.PI / 2);
+        var wPositions = [[1.55, 0.42, 0.98], [1.55, 0.42, -0.98], [-1.55, 0.42, 0.98], [-1.55, 0.42, -0.98]];
+        for (var w = 0; w < wPositions.length; w++) {
+          var wh = new THREE.Mesh(wheelGeo, wheelMat);
+          wh.position.set(wPositions[w][0], wPositions[w][1], wPositions[w][2]);
+          busGroup.add(wh);
+        }
+
+        // Headlights & Taillights
+        var hlLeft = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.28), headlightMat);
+        hlLeft.position.set(2.6, 0.72, 0.68);
+        busGroup.add(hlLeft);
+
+        var hlRight = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.28), headlightMat);
+        hlRight.position.set(2.6, 0.72, -0.68);
+        busGroup.add(hlRight);
+
+        var tlLeft = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.28), taillightMat);
+        tlLeft.position.set(-2.6, 0.75, 0.68);
+        busGroup.add(tlLeft);
+
+        var tlRight = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.28), taillightMat);
+        tlRight.position.set(-2.6, 0.75, -0.68);
+        busGroup.add(tlRight);
+
+        // Night Headlight Beam
+        busHeadlightSpot = new THREE.SpotLight(0xfff3b0, 0.0, 26, Math.PI / 5, 0.5, 1.5);
+        busHeadlightSpot.position.set(2.6, 1.0, 0);
+        var spotTarget = new THREE.Object3D();
+        spotTarget.position.set(12, 0.2, 0);
+        busGroup.add(spotTarget);
+        busHeadlightSpot.target = spotTarget;
+        busGroup.add(busHeadlightSpot);
+
+        townRoot.add(busGroup);
+        return busGroup;
+      }
+
+      var busMesh = buildKeralaBus();
+
+      // Build 3 Small Vehicles (Auto-Rickshaw, White Ambassador Car, Blue Pickup Van)
+      function buildSmallVehicle(type) {
+        var vGroup = new THREE.Group();
+        var wGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.2, 12);
+        wGeo.rotateX(Math.PI / 2);
+
+        if (type === "auto") {
+          // Iconic Kerala Black & Yellow Auto-Rickshaw
+          var bodyBlack = new THREE.Mesh(
+            new THREE.BoxGeometry(2.1, 0.65, 1.25),
+            new THREE.MeshStandardMaterial({ color: 0x1c1c1c, roughness: 0.6 })
+          );
+          bodyBlack.position.y = 0.55;
+          bodyBlack.castShadow = true;
+          vGroup.add(bodyBlack);
+
+          var canopyYellow = new THREE.Mesh(
+            new THREE.BoxGeometry(1.95, 0.75, 1.22),
+            new THREE.MeshStandardMaterial({ color: 0xf1c40f, roughness: 0.5 })
+          );
+          canopyYellow.position.set(-0.05, 1.25, 0);
+          canopyYellow.castShadow = true;
+          vGroup.add(canopyYellow);
+
+          var wFront = new THREE.Mesh(wGeo, wheelMat);
+          wFront.position.set(0.75, 0.28, 0);
+          vGroup.add(wFront);
+
+          var wRL = new THREE.Mesh(wGeo, wheelMat);
+          wRL.position.set(-0.65, 0.28, 0.58);
+          vGroup.add(wRL);
+
+          var wRR = new THREE.Mesh(wGeo, wheelMat);
+          wRR.position.set(-0.65, 0.28, -0.58);
+          vGroup.add(wRR);
+        } else if (type === "car") {
+          // Classic White Ambassador-style Car
+          var carMat = new THREE.MeshStandardMaterial({ color: 0xfdfefe, roughness: 0.35 });
+          var lowerCar = new THREE.Mesh(new THREE.BoxGeometry(3.1, 0.68, 1.55), carMat);
+          lowerCar.position.y = 0.58;
+          lowerCar.castShadow = true;
+          vGroup.add(lowerCar);
+
+          var cabinCar = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.62, 1.4), carMat);
+          cabinCar.position.set(-0.1, 1.2, 0);
+          cabinCar.castShadow = true;
+          vGroup.add(cabinCar);
+
+          var cwCoords = [[0.95, 0.28, 0.72], [0.95, 0.28, -0.72], [-0.95, 0.28, 0.72], [-0.95, 0.28, -0.72]];
+          for (var c = 0; c < cwCoords.length; c++) {
+            var cw = new THREE.Mesh(wGeo, wheelMat);
+            cw.position.set(cwCoords[c][0], cwCoords[c][1], cwCoords[c][2]);
+            vGroup.add(cw);
+          }
+        } else {
+          // Blue Goods Pickup Van
+          var cabMat = new THREE.MeshStandardMaterial({ color: 0x2471a3, roughness: 0.45 });
+          var bedMat = new THREE.MeshStandardMaterial({ color: 0x7f8c8d, roughness: 0.7 });
+
+          var vanCab = new THREE.Mesh(new THREE.BoxGeometry(1.35, 1.35, 1.55), cabMat);
+          vanCab.position.set(0.85, 0.92, 0);
+          vanCab.castShadow = true;
+          vGroup.add(vanCab);
+
+          var vanBed = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.78, 1.55), bedMat);
+          vanBed.position.set(-0.75, 0.64, 0);
+          vanBed.castShadow = true;
+          vGroup.add(vanBed);
+
+          var vwCoords = [[1.0, 0.28, 0.72], [1.0, 0.28, -0.72], [-1.0, 0.28, 0.72], [-1.0, 0.28, -0.72]];
+          for (var v = 0; v < vwCoords.length; v++) {
+            var vw = new THREE.Mesh(wGeo, wheelMat);
+            vw.position.set(vwCoords[v][0], vwCoords[v][1], vwCoords[v][2]);
+            vGroup.add(vw);
+          }
+        }
+
+        // Front Headlight glow mesh for night mode
+        var vLight = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.18, 0.8), headlightMat);
+        vLight.position.set(1.3, 0.6, 0);
+        vGroup.add(vLight);
+
+        townRoot.add(vGroup);
+        return vGroup;
+      }
+
+      appState.otherVehicles[0].mesh = buildSmallVehicle("auto");
+      appState.otherVehicles[1].mesh = buildSmallVehicle("car");
+      appState.otherVehicles[2].mesh = buildSmallVehicle("van");
+
+      // ============================================================================
+      // 10. ANIMATED TROPICAL RAIN SYSTEM
+      // ============================================================================
+      var RAIN_COUNT = 950;
+      var rainGeo = new THREE.BufferGeometry();
+      var rainPositions = new Float32Array(RAIN_COUNT * 3 * 2); // Line segments
+      for (var rIdx = 0; rIdx < RAIN_COUNT; rIdx++) {
+        var rx = (Math.random() - 0.5) * 86;
+        var ry = Math.random() * 44;
+        var rz = (Math.random() - 0.5) * 70;
+        var base = rIdx * 6;
+        rainPositions[base] = rx;
+        rainPositions[base + 1] = ry;
+        rainPositions[base + 2] = rz;
+        rainPositions[base + 3] = rx - 0.35;
+        rainPositions[base + 4] = ry - 1.6;
+        rainPositions[base + 5] = rz;
+      }
+      rainGeo.setAttribute("position", new THREE.BufferAttribute(rainPositions, 3));
+      var rainMat = new THREE.LineBasicMaterial({
+        color: 0xcceeff,
+        transparent: true,
+        opacity: 0.62
+      });
+      var rainSystem = new THREE.LineSegments(rainGeo, rainMat);
+      rainSystem.visible = false;
+      scene.add(rainSystem);
+
+      // ============================================================================
+      // 11. SCENE MODE CONTROLLER FUNCTIONS (CAMERA, DAY/NIGHT, RAIN, RESET)
+      // ============================================================================
+      function applyEnvironmentState() {
+        var isNight = appState.timeOfDay === "night";
+        var isRain = appState.weather === "rain";
+
+        // Sky & Atmospheric Fog
+        if (isNight) {
+          scene.background.setHex(isRain ? 0x090f18 : 0x0d1b2a);
+          scene.fog.color.setHex(isRain ? 0x090f18 : 0x0d1b2a);
+          scene.fog.density = isRain ? 0.0085 : 0.0052;
+          hemiLight.intensity = 0.18;
+          sunLight.intensity = 0.14;
+          sunLight.color.setHex(0x8ab4f8);
+        } else if (isRain) {
+          scene.background.setHex(0x60788a);
+          scene.fog.color.setHex(0x60788a);
+          scene.fog.density = 0.008;
+          hemiLight.intensity = 0.48;
+          sunLight.intensity = 0.45;
+          sunLight.color.setHex(0xd0dce5);
+        } else {
+          scene.background.setHex(0x8cd3ff);
+          scene.fog.color.setHex(0x8cd3ff);
+          scene.fog.density = 0.0042;
+          hemiLight.intensity = 0.72;
+          sunLight.intensity = 1.15;
+          sunLight.color.setHex(0xfff0d4);
+        }
+
+        // Building Windows, Streetlights & Vehicle Lights
+        for (var i = 0; i < nightWindowMaterials.length; i++) {
+          nightWindowMaterials[i].emissiveIntensity = isNight ? 0.95 : 0.0;
+        }
+        for (var j = 0; j < streetLightBulbs.length; j++) {
+          streetLightBulbs[j].emissiveIntensity = isNight ? 1.0 : 0.0;
+        }
+        for (var k = 0; k < streetPointLights.length; k++) {
+          streetPointLights[k].intensity = isNight ? 1.35 : 0.0;
+        }
+        headlightMat.emissiveIntensity = isNight ? 1.0 : 0.15;
+        taillightMat.emissiveIntensity = isNight ? 0.95 : 0.25;
+        if (busHeadlightSpot) {
+          busHeadlightSpot.intensity = isNight ? 2.2 : 0.0;
+        }
+
+        // Rain particles & Wet Road appearance
+        rainSystem.visible = isRain;
+        if (isRain) {
+          roadMat.color.setHex(0x1f2327);
+          roadMat.roughness = 0.22;
+          roadMat.metalness = 0.42;
+          pavementMat.color.setHex(0x938470);
+        } else {
+          roadMat.color.setHex(0x33373d);
+          roadMat.roughness = 0.85;
+          roadMat.metalness = 0.08;
+          pavementMat.color.setHex(0xc2b29b);
+        }
+      }
+
+      function setCameraMode(mode, shouldAnnounce) {
+        appState.cameraMode = mode;
+        if (mode === "overview") {
+          controls.enabled = true;
+          camera.position.copy(OVERVIEW_POS);
+          controls.target.copy(OVERVIEW_TARGET);
+          controls.update();
+          if (shouldAnnounce) {
+            announceStatus("Camera set to Town Overview. Mouse and touch orbit enabled.");
+          }
+        } else if (mode === "follow") {
+          controls.enabled = false;
+          if (shouldAnnounce) {
+            announceStatus("Camera following Kerala bus from behind and above.");
+          }
+        } else if (mode === "street") {
+          controls.enabled = false;
+          // Fixed street-level view near the South Bus Stop & Nair's Tea Shop
+          camera.position.set(-12.5, 2.75, 25.4);
+          camera.lookAt(3.5, 2.0, 21.0);
+          if (shouldAnnounce) {
+            announceStatus("Camera set to fixed street-level view near the Bus Stop shelter.");
+          }
+        }
+        updateStatusPanel();
+      }
+
+      function setTimeOfDay(timeValue, shouldAnnounce) {
+        appState.timeOfDay = timeValue;
+        applyEnvironmentState();
+        updateStatusPanel();
+        if (shouldAnnounce) {
+          if (timeValue === "night") {
+            announceStatus("Night mode enabled. Streetlights, shop windows, and vehicle headlights are now lit.");
+          } else {
+            announceStatus("Daylight mode enabled. Warm tropical sunlight restored.");
+          }
+        }
+      }
+
+      function setWeather(weatherValue, shouldAnnounce) {
+        appState.weather = weatherValue;
+        applyEnvironmentState();
+        updateStatusPanel();
+        if (shouldAnnounce) {
+          if (weatherValue === "rain") {
+            announceStatus("Tropical Rain mode enabled. Animated rain falling and road surface is wet and reflective.");
+          } else {
+            announceStatus("Clear Sky weather enabled.");
+          }
+        }
+      }
+
+      function togglePause(shouldAnnounce) {
+        appState.isPaused = !appState.isPaused;
+        updateStatusPanel();
+        if (shouldAnnounce) {
+          announceStatus(appState.isPaused ? "Simulation paused." : "Simulation resumed.");
+        }
+      }
+
+      function resetScene(shouldAnnounce) {
+        appState.showcaseActive = false;
+        appState.showcaseElapsed = 0;
+        appState.showcaseStepIndex = -1;
+        appState.isPaused = false;
+        appState.timeOfDay = "day";
+        appState.weather = "clear";
+        appState.busProgress = 0.86;
+        appState.busStopTimer = 0;
+        appState.busSpeedMultiplier = 1.0;
+        appState.otherVehicles[0].progress = 0.12;
+        appState.otherVehicles[1].progress = 0.45;
+        appState.otherVehicles[2].progress = 0.78;
+
+        applyEnvironmentState();
+        setCameraMode("overview", false);
+        updateStatusPanel();
+
+        if (shouldAnnounce) {
+          announceStatus("Scene reset to initial state: Town Overview in clear daylight with traffic running.");
+        }
+      }
+
+      // ============================================================================
+      // 12. AUTOMATED 45-SECOND SHOWCASE STATE MACHINE
+      // ============================================================================
+      var SHOWCASE_STEPS = [
+        {
+          time: 0,
+          action: function () {
+            appState.isPaused = false;
+            setTimeOfDay("day", false);
+            setWeather("clear", false);
+            setCameraMode("overview", false);
+            announceStatus("Showcase started (45 seconds): Viewing Little Kerala in Town Overview under warm daylight.");
+          }
+        },
+        {
+          time: 9,
+          action: function () {
+            setCameraMode("follow", false);
+            announceStatus("Showcase Stage 2: Camera following the red-and-cream Kerala bus around the road loop.");
+          }
+        },
+        {
+          time: 18,
+          action: function () {
+            setTimeOfDay("night", false);
+            announceStatus("Showcase Stage 3: Night mode enabled. Streetlights, shop windows, and bus headlights illuminate the town.");
+          }
+        },
+        {
+          time: 27,
+          action: function () {
+            setCameraMode("street", false);
+            setWeather("rain", false);
+            announceStatus("Showcase Stage 4: Street-level view at the Bus Stop during a tropical night rain shower.");
+          }
+        },
+        {
+          time: 36,
+          action: function () {
+            setCameraMode("overview", false);
+            setTimeOfDay("day", false);
+            setWeather("clear", false);
+            announceStatus("Showcase Final Stage: Returning to Town Overview in clear tropical daylight.");
+          }
+        }
+      ];
+
+      function startShowcase() {
+        appState.showcaseActive = true;
+        appState.showcaseElapsed = 0;
+        appState.showcaseStepIndex = 0;
+        SHOWCASE_STEPS[0].action();
+        updateStatusPanel();
+      }
+
+      function stopShowcase(completedNaturally) {
+        appState.showcaseActive = false;
+        appState.showcaseElapsed = 0;
+        appState.showcaseStepIndex = -1;
+        updateStatusPanel();
+        if (completedNaturally) {
+          announceStatus("45-second Showcase tour complete. Returned to initial Town Overview.");
+        } else {
+          announceStatus("Showcase tour stopped.");
+        }
+      }
+
+      // ============================================================================
+      // 13. WIRE UP ACCESSIBLE HTML CONTROLS
+      // ============================================================================
+      ui.showcaseBtn.addEventListener("click", function () {
+        if (appState.showcaseActive) {
+          stopShowcase(false);
+        } else {
+          startShowcase();
+        }
+      });
+
+      ui.cameraSelect.addEventListener("change", function (e) {
+        if (appState.showcaseActive) {
+          appState.showcaseActive = false;
+        }
+        setCameraMode(e.target.value, true);
+      });
+
+      ui.timeSelect.addEventListener("change", function (e) {
+        if (appState.showcaseActive) {
+          appState.showcaseActive = false;
+        }
+        setTimeOfDay(e.target.value, true);
+      });
+
+      ui.weatherSelect.addEventListener("change", function (e) {
+        if (appState.showcaseActive) {
+          appState.showcaseActive = false;
+        }
+        setWeather(e.target.value, true);
+      });
+
+      ui.pauseBtn.addEventListener("click", function () {
+        togglePause(true);
+      });
+
+      ui.resetBtn.addEventListener("click", function () {
+        resetScene(true);
+      });
+
+      ui.describeBtn.addEventListener("click", function () {
+        var camDesc = {
+          overview: "elevated Town Overview",
+          follow: "Follow Bus chase camera",
+          street: "fixed Bus Stop street-level view"
+        }[appState.cameraMode];
+
+        var timeDesc = appState.timeOfDay === "night"
+          ? "Nighttime (streetlights, shop windows, and vehicle lights are glowing)"
+          : "Daylight (warm tropical sun and soft shadows)";
+
+        var weatherDesc = appState.weather === "rain"
+          ? "Tropical Rain (animated raindrops falling on wet, reflective asphalt)"
+          : "Clear Sky";
+
+        var motionDesc = appState.isPaused
+          ? "Traffic is currently paused"
+          : "The Kerala bus is currently " + appState.busStateText;
+
+        var locDesc = getBusLocationDescription(appState.busProgress);
+
+        var fullReport =
+          "Scene Summary: Viewing from " + camDesc + ". " +
+          "Lighting: " + timeDesc + ". " +
+          "Weather: " + weatherDesc + ". " +
+          motionDesc + " " + locDesc + ". " +
+          "Three other vehicles (an auto-rickshaw, an Ambassador car, and a pickup van) are circulating smoothly in the opposite lane.";
+
+        ui.detailedDesc.textContent = fullReport;
+        announceStatus(fullReport);
+      });
+
+      // ============================================================================
+      // 14. ANIMATION LOOP (VEHICLE KINEMATICS, BUS STOP DWELL, WEATHER & CAMERA)
+      // ============================================================================
+      function updateVehicleTransforms() {
+        // 1. Update KSRTC Bus in outer left-hand lane (offset +1.85 from road center)
+        var busPose = getLanePose(appState.busProgress, 1.85, false);
+        busMesh.position.set(busPose.x, 0.08, busPose.z);
+        busMesh.rotation.y = Math.atan2(-busPose.tz, busPose.tx);
+
+        // 2. Update 3 opposing vehicles in inner left-hand lane (offset -1.85, travelling counter-clockwise)
+        for (var i = 0; i < appState.otherVehicles.length; i++) {
+          var v = appState.otherVehicles[i];
+          var vPose = getLanePose(v.progress, -1.85, true);
+          v.mesh.position.set(vPose.x, 0.08, vPose.z);
+          v.mesh.rotation.y = Math.atan2(-vPose.tz, vPose.tx);
+        }
+
+        // 3. Update Follow Camera if active
+        if (appState.cameraMode === "follow") {
+          var desiredCamPos = new THREE.Vector3(
+            busPose.x - busPose.tx * 13.5,
+            6.8,
+            busPose.z - busPose.tz * 13.5
+          );
+          var lookTarget = new THREE.Vector3(
+            busPose.x + busPose.tx * 7.0,
+            1.8,
+            busPose.z + busPose.tz * 7.0
+          );
+          camera.position.lerp(desiredCamPos, 0.14);
+          camera.lookAt(lookTarget);
+        }
+      }
+
+      // Place vehicles cleanly before hiding loading screen
+      updateVehicleTransforms();
+      applyEnvironmentState();
+      updateStatusPanel();
+      ui.loadingOverlay.classList.add("hidden");
+
+      var lastFrameTime = performance.now();
+      var elapsedTotal = 0;
+
+      function animate(now) {
+        requestAnimationFrame(animate);
+
+        if (document.hidden) {
+          lastFrameTime = now;
+          return;
+        }
+
+        var dt = Math.min((now - lastFrameTime) / 1000, 0.1);
+        lastFrameTime = now;
+
+        // Advance 45-second Showcase Tour if active
+        if (appState.showcaseActive) {
+          var prevSec = Math.ceil(45 - appState.showcaseElapsed);
+          appState.showcaseElapsed += dt;
+          var curSec = Math.ceil(45 - appState.showcaseElapsed);
+          if (curSec !== prevSec) {
+            updateStatusPanel();
+          }
+
+          for (var sIdx = appState.showcaseStepIndex + 1; sIdx < SHOWCASE_STEPS.length; sIdx++) {
+            if (appState.showcaseElapsed >= SHOWCASE_STEPS[sIdx].time) {
+              appState.showcaseStepIndex = sIdx;
+              SHOWCASE_STEPS[sIdx].action();
+              updateStatusPanel();
+            }
+          }
+
+          if (appState.showcaseElapsed >= 45.0) {
+            stopShowcase(true);
+          }
+        }
+
+        if (!appState.isPaused) {
+          elapsedTotal += dt;
+
+          // Gentle palm frond breeze sway
+          for (var p = 0; p < palmLeafGroups.length; p++) {
+            var item = palmLeafGroups[p];
+            item.group.rotation.z = Math.sin(elapsedTotal * 1.8 + item.phase) * 0.045;
+          }
+
+          // Bus kinematics: Cruise -> Decelerate -> Stop at Bus Shelter (s = 0.0) -> Accelerate
+          var BASE_BUS_SPEED = 0.052; // ~19 seconds per loop + 3.2s stop
+          if (appState.busStopTimer > 0) {
+            appState.busStopTimer -= dt;
+            appState.busSpeedMultiplier = 0;
+            appState.busStateText = "stopped at the Bus Shelter for passengers";
+            if (appState.busStopTimer <= 0) {
+              appState.busStopTimer = 0;
+              appState.busProgress = 0.0025; // Nudge past stop point
+            }
+          } else {
+            // Distance remaining until s = 1.0 (which wraps to 0.0 Bus Stop)
+            var distToStop = 1.0 - appState.busProgress;
+            var distFromStop = appState.busProgress;
+
+            if (distToStop < 0.055) {
+              // Smooth deceleration approaching the bus shelter
+              appState.busSpeedMultiplier = Math.max(0.14, distToStop / 0.055);
+              appState.busStateText = "slowing down for the Bus Stop";
+            } else if (distFromStop < 0.045) {
+              // Smooth acceleration departing the bus shelter
+              appState.busSpeedMultiplier = Math.max(0.18, distFromStop / 0.045);
+              appState.busStateText = "accelerating away from the Bus Stop";
+            } else {
+              appState.busSpeedMultiplier = 1.0;
+              appState.busStateText = "cruising smoothly";
+            }
+
+            var prevProgress = appState.busProgress;
+            appState.busProgress += BASE_BUS_SPEED * appState.busSpeedMultiplier * dt;
+
+            // Trigger bus stop dwell when crossing 1.0 -> 0.0
+            if (prevProgress < 1.0 && appState.busProgress >= 1.0) {
+              appState.busProgress = 0.0;
+              appState.busStopTimer = 3.2; // Stop for 3.2 seconds at shelter
+              appState.busSpeedMultiplier = 0;
+              appState.busStateText = "stopped at the Bus Shelter for passengers";
+            } else {
+              appState.busProgress = appState.busProgress % 1.0;
+            }
+          }
+
+          // Advance the 3 opposing vehicles (equally spaced in inner lane, moving counter-clockwise)
+          for (var vIdx = 0; vIdx < appState.otherVehicles.length; vIdx++) {
+            var veh = appState.otherVehicles[vIdx];
+            veh.progress = (veh.progress - veh.baseSpeed * dt + 1.0) % 1.0;
+          }
+
+          updateVehicleTransforms();
+
+          // Animate Falling Raindrops
+          if (appState.weather === "rain") {
+            var posArr = rainGeo.attributes.position.array;
+            var fallStep = 34.0 * dt;
+            for (var r = 0; r < RAIN_COUNT; r++) {
+              var idx = r * 6;
+              posArr[idx + 1] -= fallStep;
+              posArr[idx + 4] -= fallStep;
+              if (posArr[idx + 1] < 0) {
+                var resetY = 42.0 + Math.random() * 4.0;
+                posArr[idx + 1] = resetY;
+                posArr[idx + 4] = resetY - 1.6;
+              }
+            }
+            rainGeo.attributes.position.needsUpdate = true;
+          }
+        }
+
+        if (appState.cameraMode === "overview") {
+          controls.update();
+        }
+
+        renderer.render(scene, camera);
+      }
+
+      // Responsive Window Resize Handler
+      window.addEventListener("resize", function () {
+        var width = ui.canvas.clientWidth;
+        var height = Math.max(1, ui.canvas.clientHeight);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+        renderer.setSize(width, height, false);
+      });
+
+      requestAnimationFrame(animate);
+    })();
+  </script>
+</body>
+</html>
